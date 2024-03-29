@@ -12,10 +12,14 @@ typedef struct Process {
     char *name; 
     int period;
     int CPU_burst;
+    int remaining_burst;
+    int lost;
+    int completed;
+    int killed;
 } Process;
 
 int main(int argc, char *argv[]) {
-    int time,p_lines;
+    int total_time,p_lines;
     int count = 0;
     char line[256];
 
@@ -31,7 +35,7 @@ int main(int argc, char *argv[]) {
     }
 
     
-    fscanf(ptr_file, "%d", &time); 
+    fscanf(ptr_file, "%d", &total_time); 
 
     while (fgets(line, sizeof(line), ptr_file)) { //cuidado com o tamanho da linha
         count++;
@@ -61,9 +65,9 @@ int main(int argc, char *argv[]) {
 
     
     if(strcmp(argv[0], "./rate") == 0){
-        rate(time, processes, p_lines);
+        rate(total_time, processes, p_lines);
     }else if(strcmp(argv[0], "./edf") == 0){
-        edf(time, processes, p_lines);
+        edf(total_time, processes, p_lines);
     }
 
     
@@ -73,17 +77,14 @@ int main(int argc, char *argv[]) {
 }
 
 
-void rate(int time, Process *processes, int p_lines){
-    for (int i = 0; i < p_lines; i++) {
-        printf("\nNome: %s\t", processes[i].name);
-        printf("Período: %d\n", processes[i].period);
-    }
+void rate(int total_time, Process *processes, int p_lines){
+    int time =0;
+
+
 }
 
-void edf(int time, Process *processes, int p_lines){
-    for (int i = 0; i < p_lines; i++) {
-        printf("\nNome: %s\t", processes[i].name);
-        printf("CPU Burst: %d\t", processes[i].CPU_burst);
-    }
+void edf(int total_time, Process *processes, int p_lines){
+    int time =0;
+    
 }
 
