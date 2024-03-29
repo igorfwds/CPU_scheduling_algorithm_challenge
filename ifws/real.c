@@ -59,24 +59,31 @@ int main(int argc, char *argv[]) {
         fscanf(ptr_file, "%s %d %d", processes[i].name, &processes[i].period, &processes[i].CPU_burst);
     }
 
-    for (int i = 0; i < p_lines; i++) {
-        printf("Nome: %s\n", processes[i].name);
-        printf("Período: %d\n", processes[i].period);
-        printf("CPU Burst: %d\n", processes[i].CPU_burst);
-    }
     
+    if(strcmp(argv[0], "./rate") == 0){
+        rate(time, processes, p_lines);
+    }else if(strcmp(argv[0], "./edf") == 0){
+        edf(time, processes, p_lines);
+    }
 
+    
     fclose(ptr_file);
     free(processes);
     return 0;
 }
 
 
-void rate(){
-
+void rate(int time, Process *processes, int p_lines){
+    for (int i = 0; i < p_lines; i++) {
+        printf("\nNome: %s\t", processes[i].name);
+        printf("Período: %d\n", processes[i].period);
+    }
 }
 
-void edf(){
-
+void edf(int time, Process *processes, int p_lines){
+    for (int i = 0; i < p_lines; i++) {
+        printf("\nNome: %s\t", processes[i].name);
+        printf("CPU Burst: %d\t", processes[i].CPU_burst);
+    }
 }
 
