@@ -13,6 +13,7 @@ typedef struct Process {
     int lost;
     int completed;
     int killed;
+    int deadline;
 } Process;
 
 
@@ -83,16 +84,27 @@ int main(int argc, char *argv[]) {
 
 void rate(int total_time, Process *processes, int p_lines){
     int time = 0;
-    
     qsort(processes, p_lines, sizeof(Process), compareByPeriod);
-    for(int i = 0; i < p_lines; i++){
-        printf("[%s] [%d] [%d]\n", processes[i].name, processes[i].period, processes[i].CPU_burst);
+    
+    while(time <= total_time){
+        int i =0;
+        processes[i].remaining_burst = processes[i].CPU_burst;
+        if( time == 0){
+            processes[i].deadline = processes[i].period; 
+        }else{
+            processes[i].deadline += processes[i].period; 
+        }
+        while(processes[i].remaining_burst > 0){
+            processes[i].remaining_burst--;
+            time++;
+            if(time == processes[i].deadline){
+                processes[i].lost++;
+                processes[i].deadline += processes[i].period;
+            }
+        }
+
 
     }
-    // while(time <= total_time){
-        
-
-    // }
 
 }
 
