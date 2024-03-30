@@ -2,9 +2,6 @@
 #include<stdlib.h>
 #include<string.h>
 
-void rate();
-void edf();
-
 
 
 
@@ -17,6 +14,13 @@ typedef struct Process {
     int completed;
     int killed;
 } Process;
+
+
+void rate(int total_time, Process *processes, int p_lines);
+void edf(int total_time, Process *processes, int p_lines);
+int compareByPeriod(const void *a, const void *b);
+
+
 
 int main(int argc, char *argv[]) {
     int total_time,p_lines;
@@ -70,7 +74,7 @@ int main(int argc, char *argv[]) {
         edf(total_time, processes, p_lines);
     }
 
-    
+
     fclose(ptr_file);
     free(processes);
     return 0;
@@ -78,13 +82,29 @@ int main(int argc, char *argv[]) {
 
 
 void rate(int total_time, Process *processes, int p_lines){
-    int time =0;
+    int time = 0;
+    
+    qsort(processes, p_lines, sizeof(Process), compareByPeriod);
+    for(int i = 0; i < p_lines; i++){
+        printf("[%s] [%d] [%d]\n", processes[i].name, processes[i].period, processes[i].CPU_burst);
 
+    }
+    // while(time <= total_time){
+        
+
+    // }
 
 }
 
 void edf(int total_time, Process *processes, int p_lines){
-    int time =0;
+    int time = 0;
+    while(time <= total_time){
     
+    }
 }
 
+int compareByPeriod(const void *a, const void *b) {
+    Process *processA = (Process *)a;
+    Process *processB = (Process *)b;
+    return processA->period - processB->period;
+}
