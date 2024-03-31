@@ -1,14 +1,3 @@
 165
 T1 50 25
 T2 80 35
-
-struct Process {
-    char *name; 
-    int period;
-    int CPU_burst;
-    int remaining_burst;
-    int lost;
-    int completed;
-    int killed;
-    int deadline;
-} Process;

@@ -14,12 +14,13 @@ typedef struct Process {
     int completed;
     int killed;
     int deadline;
+    char feedback[2];
 } Process;
 
 
 void rate(int total_time, Process *processes, int p_lines);
 void edf(int total_time, Process *processes, int p_lines);
-int compareByPeriod(const void *a, const void *b);
+int rateSort(const void *a, const void *b);
 
 
 
@@ -70,11 +71,15 @@ int main(int argc, char *argv[]) {
 
     
     if(strcmp(argv[0], "./rate") == 0){
+        printf("\nEXECUTION BY RATE\n");
         rate(total_time, processes, p_lines);
+
     }else if(strcmp(argv[0], "./edf") == 0){
+        printf("\nEXECUTION BY EDF\n");    
         edf(total_time, processes, p_lines);
     }
 
+    
 
     fclose(ptr_file);
     free(processes);
@@ -84,8 +89,58 @@ int main(int argc, char *argv[]) {
 
 void rate(int total_time, Process *processes, int p_lines){
     int time = 0;
-    qsort(processes, p_lines, sizeof(Process), compareByPeriod);
+    qsort(processes, p_lines, sizeof(Process), rateSort);
     
+    int i = 0;
+    while(time <= total_time){
+        processes[i].feedback[0] = 'H';
+        processes[i].feedback[1] = 0;
+        processes[i].remaining_burst = processes[i].CPU_burst;
+        processes[i].completed = 0;
+        processes[i].killed = 0;
+        processes[i].lost = 0;
+        if( time == 0){
+            processes[i].deadline = processes[i].period; 
+        }else{
+            processes[i].deadline += processes[i].period; 
+        }
+        while(processes[i].remaining_burst > 0){
+            if(time >= processes[i].deadline){
+                processes[i].lost++;
+                processes[i].deadline += processes[i].period;
+            }
+            time++;
+            processes[i].remaining_burst--;
+            if(processes[i].remaining_burst == 0){
+                processes[i].completed++;
+                processes[i].feedback[0] = 'F';
+                i++;
+            }
+        }
+        
+        time++;
+    }
+
+    for(int p = 0; p < p_lines; p++){
+        printf("[%s] for %d units - %s\n", processes[p].name, processes[p].lost, processes[p].feedback);
+    }
+
+    printf("\nLOST DEADLINES\n");
+    for(int p = 0; p < p_lines; p++){
+        printf("[%s] %d\n", processes[p].name, processes[p].lost);
+    }
+    printf("\nCOMPLETE EXECUTION\n");
+    for(int p = 0; p < p_lines; p++){
+        printf("[%s] %d\n", processes[p].name, processes[p].completed);
+    }
+    printf("\nKILLED\n");
+    for(int p = 0; p < p_lines; p++){
+        printf("[%s] %d\n", processes[p].name, processes[p].killed);
+    }
+}
+
+void edf(int total_time, Process *processes, int p_lines){
+    int time = 0;
     while(time <= total_time){
         int i =0;
         processes[i].remaining_burst = processes[i].CPU_burst;
@@ -95,27 +150,19 @@ void rate(int total_time, Process *processes, int p_lines){
             processes[i].deadline += processes[i].period; 
         }
         while(processes[i].remaining_burst > 0){
-            processes[i].remaining_burst--;
-            time++;
-            if(time == processes[i].deadline){
+            if(time >= processes[i].deadline){
                 processes[i].lost++;
                 processes[i].deadline += processes[i].period;
             }
+            time++;
+            processes[i].remaining_burst--;
         }
-
-
     }
 
-}
-
-void edf(int total_time, Process *processes, int p_lines){
-    int time = 0;
-    while(time <= total_time){
     
-    }
 }
 
-int compareByPeriod(const void *a, const void *b) {
+int rateSort(const void *a, const void *b) {
     Process *processA = (Process *)a;
     Process *processB = (Process *)b;
     return processA->period - processB->period;
