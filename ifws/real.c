@@ -14,7 +14,7 @@ typedef struct Process {
     int completed;
     int killed;
     int deadline;
-    char feedback[2];
+    char feedback;
     int running;
 } Process;
 
@@ -22,7 +22,7 @@ typedef struct Process {
 void rate(int total_time, Process *processes, int p_lines);
 void edf(int total_time, Process *processes, int p_lines);
 int rateSort(const void *a, const void *b);
-
+void populateProcess(Process *processesArray,int processLinesCount, FILE *file);
 
 
 int main(int argc, char *argv[]) {
@@ -57,27 +57,11 @@ int main(int argc, char *argv[]) {
         printf("Erro ao alocar memória.\n");
         return 1;
     }
+    int lixo;
+    // fgets(line, sizeof(line), ptr_file);
+    fscanf(ptr_file, "%d", &lixo);
 
-    fgets(line, sizeof(line), ptr_file);
-
-    for (int i = 0; i < p_lines; i++) {
-        processes[i].name = malloc(1000 * sizeof(char));
-        if (processes[i].name == NULL) {
-            printf("Erro ao alocar memória para o nome do processo.\n");
-            return 1;
-        }
-
-        fscanf(ptr_file, "%s %d %d", processes[i].name, &processes[i].period, &processes[i].CPU_burst);
-
-        processes[i].lost = 0;
-        processes[i].completed = 0;
-        processes[i].killed = 0;
-        processes[i].deadline = processes[i].period;
-        processes[i].feedback[0] = 'H';
-        processes[i].feedback[1] = 0;
-        processes[i].running = 0;
-    }
-
+    populateProcess(processes,p_lines, ptr_file);
     
     if(strcmp(argv[0], "./rate") == 0){
         printf("EXECUTION BY RATE\n");
@@ -109,46 +93,79 @@ int main(int argc, char *argv[]) {
 
 
 void rate(int total_time, Process *processes, int p_lines){
-    int time = 0;
     qsort(processes, p_lines, sizeof(Process), rateSort);
-
+    int time = 0;
+    int lost = 0;
+    int remaining_burst;
     int process = 0;
-    while(time <= total_time){
-        if(processes[process].remaining_burst == 0){
-            processes[process].remaining_burst = processes[process].CPU_burst;
+    int completed = 0;
+    int deadline;
+    int period;
+    for(;process <= p_lines; process++ ){
+        remaining_burst = processes[process].CPU_burst;
+        deadline = processes[process].deadline;
+        period = processes[process].period;
+        if(time == total_time){
+            break;
+        }
+        if(remaining_burst == 0){
+            remaining_burst = processes[process].CPU_burst;
         }
         
-        if(time > processes[process].deadline){
-            processes[process].deadline += processes[process].period; 
+        if(time > deadline){
+            deadline += period; 
         }
-
-        while(processes[process].remaining_burst > 0){
-            if(time >= processes[process].deadline){
-                processes[process].lost++;
-                processes[process].deadline += processes[process].period;
+        while(remaining_burst > 0){
+            if(time >= deadline){
+                // processes[process].lost++;
+                lost++;
+                deadline += period;
                 break;
             }
     
             time++;
-            processes[process].remaining_burst--;
-            if(processes[process].remaining_burst == 0){
-                processes[process].completed++;
-                processes[process].feedback[0] = 'F';
+            remaining_burst--;
+            // processes[process].remaining_burst--;
+            if(remaining_burst == 0){
+                // processes[process].completed++;
+                completed++;
+                processes[process].feedback = 'F';
                 break;
             }
         }
+        processes[process].lost = lost;
         
 
-        process++; //logica certa mas lixo de cpu entrando na string do nome do primeiro processo
+        // process++; //logica certa mas lixo de cpu entrando na string do nome do primeiro processo
         time++;
+        
     }
 
 
     for(int p = 0; p < p_lines; p++){
-        printf("[%s] for %d units - %s\n", processes[p].name, (processes[p].CPU_burst - processes[p].remaining_burst), processes[p].feedback);
+        printf("[%s] for %d units - %c\n", processes[p].name, (processes[p].CPU_burst - processes[p].remaining_burst), processes[p].feedback);
     }
 
     
+}
+
+void populateProcess(Process *processesArray,int processLinesCount, FILE *file){
+    for (int i = 0; i < processLinesCount; i++) {
+        processesArray[i].name = malloc(1000 * sizeof(char));
+        if (processesArray[i].name == NULL) {
+            printf("Erro ao alocar memória para o nome do processo.\n");
+            
+        }
+
+        fscanf(file, "%s %d %d", processesArray[i].name, &processesArray[i].period, &processesArray[i].CPU_burst);
+
+        processesArray[i].lost = 0;
+        processesArray[i].completed = 0;
+        processesArray[i].killed = 0;
+        processesArray[i].deadline = processesArray[i].period;
+        processesArray[i].feedback = 'H';
+        processesArray[i].running = 0;
+    }
 }
 
 void edf(int total_time, Process *processes, int p_lines){
