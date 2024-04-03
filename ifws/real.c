@@ -13,7 +13,8 @@ typedef struct Process {
     int lost;
     int completed;
     int killed;
-    int deadline;
+    int *arriving_times;
+    int could_run;
     char feedback;
     int running;
 } Process;
@@ -22,7 +23,7 @@ typedef struct Process {
 void rate(int total_time, Process *processes, int p_lines);
 void edf(int total_time, Process *processes, int p_lines);
 int rateSort(const void *a, const void *b);
-void populateProcess(Process *processesArray,int processLinesCount, FILE *file);
+void populateProcess(Process *processesArray,int processLinesCount, FILE *file, int total_t);
 
 
 int main(int argc, char *argv[]) {
@@ -61,7 +62,9 @@ int main(int argc, char *argv[]) {
     // fgets(line, sizeof(line), ptr_file);
     fscanf(ptr_file, "%d", &lixo);
 
-    populateProcess(processes,p_lines, ptr_file);
+    populateProcess(processes,p_lines, ptr_file, total_time);
+
+
     
     if(strcmp(argv[0], "./rate") == 0){
         printf("EXECUTION BY RATE\n");
@@ -101,44 +104,31 @@ void rate(int total_time, Process *processes, int p_lines){
     int completed = 0;
     int deadline;
     int period;
-    for(;process <= p_lines; process++ ){
-        remaining_burst = processes[process].CPU_burst;
-        deadline = processes[process].deadline;
-        period = processes[process].period;
-        if(time == total_time){
-            break;
-        }
-        if(remaining_burst == 0){
-            remaining_burst = processes[process].CPU_burst;
-        }
-        
-        if(time > deadline){
-            deadline += period; 
-        }
-        while(remaining_burst > 0){
-            if(time >= deadline){
-                // processes[process].lost++;
-                lost++;
-                deadline += period;
-                break;
-            }
-    
-            time++;
-            remaining_burst--;
-            // processes[process].remaining_burst--;
-            if(remaining_burst == 0){
-                // processes[process].completed++;
-                completed++;
-                processes[process].feedback = 'F';
-                break;
-            }
-        }
-        processes[process].lost = lost;
-        
 
-        // process++; //logica certa mas lixo de cpu entrando na string do nome do primeiro processo
-        time++;
+
+
+    while(1){
+        if (time == total_time){
+          for(int i = 0; i < p_lines; i++){
+            if(processes[i].could_run > processes[i].lost + processes[i].completed){
+                processes[i].killed++;
+            }
+            if(processes[i].running == 1) {
+                processes[i].feedback = 'K';
+                printf("[%s] for %d units - %c\n", processes[i].name, (processes[i].CPU_burst - processes[i].remaining_burst), processes[i].feedback);
+            }
+          }
+          break;  
+        } 
+        if(time == 0){
+            processes[process].completed +=1;
+            time += processes[process].CPU_burst;
+        }else{
+
+            time++;
+        }
         
+        // printf ("TEMPO=> %d", time);
     }
 
 
@@ -146,10 +136,9 @@ void rate(int total_time, Process *processes, int p_lines){
         printf("[%s] for %d units - %c\n", processes[p].name, (processes[p].CPU_burst - processes[p].remaining_burst), processes[p].feedback);
     }
 
-    
 }
 
-void populateProcess(Process *processesArray,int processLinesCount, FILE *file){
+void populateProcess(Process *processesArray,int processLinesCount, FILE *file, int total_t){
     for (int i = 0; i < processLinesCount; i++) {
         processesArray[i].name = malloc(1000 * sizeof(char));
         if (processesArray[i].name == NULL) {
@@ -162,31 +151,38 @@ void populateProcess(Process *processesArray,int processLinesCount, FILE *file){
         processesArray[i].lost = 0;
         processesArray[i].completed = 0;
         processesArray[i].killed = 0;
-        processesArray[i].deadline = processesArray[i].period;
+        processesArray[i].remaining_burst = 0;
         processesArray[i].feedback = 'H';
         processesArray[i].running = 0;
+        int number_of_arives = (total_t/processesArray[i].period);
+        processesArray[i].could_run = number_of_arives;
+        processesArray[i].arriving_times = calloc(number_of_arives,sizeof(int));
+        processesArray[i].arriving_times[1] = processesArray[i].period;
+        for (int y = 2; y<= number_of_arives; y++){
+            processesArray[i].arriving_times[y] = (y*processesArray[i].period);
+        }
     }
 }
 
 void edf(int total_time, Process *processes, int p_lines){
-    int time = 0;
-    while(time <= total_time){
-        int i =0;
-        processes[i].remaining_burst = processes[i].CPU_burst;
-        if( time == 0){
-            processes[i].deadline = processes[i].period; 
-        }else{
-            processes[i].deadline += processes[i].period; 
-        }
-        while(processes[i].remaining_burst > 0){
-            if(time >= processes[i].deadline){
-                processes[i].lost++;
-                processes[i].deadline += processes[i].period;
-            }
-            time++;
-            processes[i].remaining_burst--;
-        }
-    }
+    // int time = 0;
+    // while(time <= total_time){
+    //     int i =0;
+    //     processes[i].remaining_burst = processes[i].CPU_burst;
+    //     if( time == 0){
+    //         processes[i].deadline = processes[i].period; 
+    //     }else{
+    //         processes[i].deadline += processes[i].period; 
+    //     }
+    //     while(processes[i].remaining_burst > 0){
+    //         if(time >= processes[i].deadline){
+    //             processes[i].lost++;
+    //             processes[i].deadline += processes[i].period;
+    //         }
+    //         time++;
+    //         processes[i].remaining_burst--;
+    //     }
+    // }
 
     
 }
