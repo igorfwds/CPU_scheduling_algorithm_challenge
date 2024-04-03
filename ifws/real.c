@@ -19,11 +19,14 @@ typedef struct Process {
     int running;
 } Process;
 
-
+Process *findNextProcess(Process *processes, int p_lines, int current_time);
+void updateProcessState(Process *process);
+void executeProcess(Process *process);
+void populateProcess(Process *processesArray,int processLinesCount, FILE *file, int total_t);
+int nextArrive(Process *processes, int p_lines, int current_time, int total_t);
 void rate(int total_time, Process *processes, int p_lines);
 void edf(int total_time, Process *processes, int p_lines);
 int rateSort(const void *a, const void *b);
-void populateProcess(Process *processesArray,int processLinesCount, FILE *file, int total_t);
 
 
 int main(int argc, char *argv[]) {
@@ -94,48 +97,20 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-
-void rate(int total_time, Process *processes, int p_lines){
+void rate(int total_time,Process *processes, int p_lines ) {
     qsort(processes, p_lines, sizeof(Process), rateSort);
-    int time = 0;
-    int lost = 0;
-    int remaining_burst;
-    int process = 0;
-    int completed = 0;
-    int deadline;
-    int period;
-
-
-
-    while(1){
-        if (time == total_time){
-          for(int i = 0; i < p_lines; i++){
-            if(processes[i].could_run > processes[i].lost + processes[i].completed){
-                processes[i].killed++;
-            }
-            if(processes[i].running == 1) {
-                processes[i].feedback = 'K';
-                printf("[%s] for %d units - %c\n", processes[i].name, (processes[i].CPU_burst - processes[i].remaining_burst), processes[i].feedback);
-            }
-          }
-          break;  
-        } 
-        if(time == 0){
-            processes[process].completed +=1;
-            time += processes[process].CPU_burst;
-        }else{
-
-            time++;
-        }
+    int time = 1;
+    Process *next_process;
+    while (time <= total_time) {
         
-        // printf ("TEMPO=> %d", time);
+        next_process = findNextProcess(processes, p_lines, time);
+        printf("\nNEXT PROCESS => %s", next_process->name);
+        if (next_process != NULL) {
+            executeProcess(next_process);
+            updateProcessState(next_process);
+        }
+        time++;
     }
-
-
-    for(int p = 0; p < p_lines; p++){
-        printf("[%s] for %d units - %c\n", processes[p].name, (processes[p].CPU_burst - processes[p].remaining_burst), processes[p].feedback);
-    }
-
 }
 
 void populateProcess(Process *processesArray,int processLinesCount, FILE *file, int total_t){
@@ -151,7 +126,7 @@ void populateProcess(Process *processesArray,int processLinesCount, FILE *file, 
         processesArray[i].lost = 0;
         processesArray[i].completed = 0;
         processesArray[i].killed = 0;
-        processesArray[i].remaining_burst = 0;
+        processesArray[i].remaining_burst = processesArray[i].CPU_burst;
         processesArray[i].feedback = 'H';
         processesArray[i].running = 0;
         int number_of_arives = (total_t/processesArray[i].period);
@@ -186,6 +161,38 @@ void edf(int total_time, Process *processes, int p_lines){
 
     
 }
+
+Process *findNextProcess(Process *processes, int p_lines, int current_time) {
+    Process *next_process = NULL;
+    for (int i = 0; i < p_lines; i++) {
+        for (int j = 0; j < processes[i].could_run; j++) {
+            if (processes[i].arriving_times[j] <= current_time && processes[i].remaining_burst > 0) {
+                if (next_process == NULL || processes[i].period < next_process->period) {
+                    next_process = &processes[i];
+                }
+            }
+        }
+    }
+    return next_process;
+}
+
+void updateProcessState(Process *process) {
+    if (process->remaining_burst == 0) {
+        printf("%s foi completado.\n", process->name);
+    } else if (process->remaining_burst < 0) {
+        printf("%s perdeu um ciclo de execução.\n", process->name);
+    }
+}
+
+void executeProcess(Process *process) {
+    if (process->remaining_burst > 0) {
+        process->remaining_burst--;
+    }else if(process->remaining_burst == 0){
+        process->completed++;
+    }
+}
+
+
 
 int rateSort(const void *a, const void *b) {
     Process *processA = (Process *)a;
