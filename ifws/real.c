@@ -101,44 +101,60 @@ void rate(int total_time,Process *processes, int p_lines ) {
     qsort(processes, p_lines, sizeof(Process), rateSort);
     int time = 0;
     int count_idle = 0;
+    int executed = 0;
     // Process *next_process;
     while (time <= total_time) {
         for(int i=0; i < p_lines; i++){
-            printf("\n%s burst=> %d", processes[i].name,processes[i].remaining_burst);
+            // printf("\n%s burst=> %d", processes[i].name,processes[i].remaining_burst);
             if(time == processes[i].arriving_time){
                 processes[i].remaining_burst = processes[i].CPU_burst;
             }
-            if(time == total_time && processes[i].remaining_burst > 0){
+            if(time == total_time){
+                if(processes[i].remaining_burst > 0){
                 processes[i].feedback = 'K';
                 processes[i].killed++;
                 printf("[%s] for %d - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
-                break;
-                
-            }else if(time == processes[i].next_arriving_time && processes[i].remaining_burst > 0){
-                processes[i].feedback = 'L';
-                processes[i].lost++;
-                processes[i].remaining_burst = processes[i].CPU_burst;
-                processes[i].arriving_time += processes[i].period;
-                processes[i].next_arriving_time += processes[i].period;
-                printf("[%s] for %d - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
-                break;
-            }else if(processes[i].remaining_burst > 0 && time >= processes[i].arriving_time){
-                executeProcess(&processes[i], time);
-                break;
-            }else if(processes[i].remaining_burst == 0){
-                
-                processes[i].feedback = 'F';
-                processes[i].completed++;
-                processes[i].arriving_time += processes[i].period;
-                processes[i].next_arriving_time += processes[i].period;
-                printf("[%s] for %d - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
-                break;
+                processes[i].running_for = 0;
+                break;   
+                }
+            }else{
+                if(time == processes[i].next_arriving_time && processes[i].remaining_burst > 0){
+                    processes[i].feedback = 'L';
+                    processes[i].lost++;
+                    processes[i].remaining_burst = processes[i].CPU_burst;
+                    processes[i].arriving_time += processes[i].period;
+                    processes[i].next_arriving_time += processes[i].period;
+                    printf("[%s] for %d - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                    processes[i].running_for = 0;
+                    break;
+                }
+                if(processes[i].remaining_burst > 0 && time >= processes[i].arriving_time){
+                    executeProcess(&processes[i], time);
+                    executed = 1;
+                }else if(processes[i].remaining_burst == 0){
+                    if(time < processes[i].arriving_time){
+                        printf("idle for %d\n", count_idle);
+                        break;
+                    }
+                    processes[i].feedback = 'F';
+                    processes[i].completed++;
+                    processes[i].arriving_time += processes[i].period;
+                    processes[i].next_arriving_time += processes[i].period;
+                    printf("[%s] for %d - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                    processes[i].remaining_burst = processes[i].CPU_burst;
+                    processes[i].running_for = 0;
+                    executed = 0;
+
+                    break;
+                }
             }
 
         }
-        printf(" TEMPO=>%d\n", time);
+        // printf(" TEMPO=>%d\n", time);
 
-        
+        if(executed == 0){
+            count_idle++;
+        }
         time++;
     }
 }
@@ -207,9 +223,3 @@ void updateProcessState(Process *process, int current_time) {
     }
 }
 
-
-// if(time < processes[i].arriving_time){
-                //     count_idle++;
-                //     printf("idle for %d\n", count_idle);
-                //     break;
-                // }
