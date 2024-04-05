@@ -24,9 +24,10 @@ typedef struct Process {
 
 void executeProcess(Process *process, int current_time);
 void populateProcess(Process *processesArray,int processLinesCount, FILE *file, int total_t);
-void rate(int total_time, Process *processes, int p_lines);
-void edf(int total_time, Process *processes, int p_lines);
+void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines);
+void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_lines);
 int rateSort(const void *a, const void *b);
+int edfSort(const void *a, const void *b);
 
 
 int main(int argc, char **argv) {
@@ -70,11 +71,11 @@ int main(int argc, char **argv) {
     
     if(strcmp(argv[0], "./rate") == 0){
         printf("EXECUTION BY RATE\n");
-        rate(total_time, processes, p_lines);
+        rateMonotonicAlgorithm(total_time, processes, p_lines);
 
     }else if(strcmp(argv[0], "./edf") == 0){
         printf("\nEXECUTION BY EDF\n");    
-        edf(total_time, processes, p_lines);
+        earliestDeadlineFirstAlgorithm(total_time, processes, p_lines);
     }
 
     printf("\nLOST DEADLINES\n");
@@ -96,7 +97,7 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-void rate(int total_time,Process *processes, int p_lines ) {
+void rateMonotonicAlgorithm(int total_time,Process *processes, int p_lines ) {
     qsort(processes, p_lines, sizeof(Process), rateSort);
     int time = 0;
     int count_idle = 0;
@@ -149,7 +150,9 @@ void rate(int total_time,Process *processes, int p_lines ) {
                 processes[i].next_arriving_time += processes[i].period;
                 processes[i].is_running = 0;
                 processes[i].remaining_burst = processes[i].CPU_burst;
-                printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                if(processes[i].running_for > 0){
+                    printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                }
                 executeProcess(&processes[i], time);
                 lastExecuted = &processes[i];
                 executed = 1;
@@ -166,7 +169,7 @@ void rate(int total_time,Process *processes, int p_lines ) {
                 lastExecuted = &processes[i];
                 executed = 1;
                 break;
-            }else if(processes[i].remaining_burst == 0 && time > processes[i].arriving_time /*&& time < processes[i].next_arriving_time*/ && executed == 1){
+            }else if(processes[i].remaining_burst == 0 && time > processes[i].arriving_time && executed == 1){
                 
                 processes[i].feedback = 'F';
                 processes[i].is_running = 0;
@@ -228,7 +231,114 @@ void populateProcess(Process *processesArray,int processLinesCount, FILE *file, 
     }
 }
 
-void edf(int total_time, Process *processes, int p_lines){}
+void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_lines){
+    qsort(processes, p_lines, sizeof(Process), edfSort);
+    int time = 0;
+    int count_idle = 0;
+    int idle_processes = 0;
+    int executed = 0;
+    Process *lastExecuted = NULL;
+    while (time <= total_time) {
+        qsort(processes, p_lines, sizeof(Process), edfSort);
+        idle_processes = 0;
+    // printf("\n TEMPO=>%d\t", time);
+        for(int i=0; i < p_lines; i++){
+            if(time == processes[i].arriving_time){
+                processes[i].remaining_burst = processes[i].CPU_burst;
+            }
+    // printf("%s burst=> %d\t", processes[i].name,processes[i].remaining_burst);
+            if(time == total_time){
+                if(count_idle > 0){
+                    printf("idle for %d units\n", count_idle);
+                    count_idle = 0;
+                }
+                if(processes[i].remaining_burst > 0 && processes[i].arriving_time <= total_time){
+                    processes[i].feedback = 'K';
+                    processes[i].killed++;
+                    if(processes[i].CPU_burst > processes[i].remaining_burst){
+                    printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                    }
+                    processes[i].is_running = 0;
+                    processes[i].running_for = 0;
+                    continue;
+                }
+            }
+            
+            
+            if(lastExecuted != NULL && time == processes[i].arriving_time){
+                if(strcmp(lastExecuted->name, processes[i].name) != 0 && time != total_time && lastExecuted->remaining_burst > 0 && lastExecuted->is_running == 1){
+                    lastExecuted->is_running = 0;
+                    lastExecuted->feedback = 'H';
+                    processes[i].remaining_burst = processes[i].CPU_burst;
+                    printf("[%s] for %d units - %c\n", lastExecuted->name, lastExecuted->running_for, lastExecuted->feedback);
+                    executeProcess(&processes[i], time);
+                    lastExecuted->running_for = 0;
+                    processes[i].running_for = 1;
+                    lastExecuted = &processes[i];
+                    executed = 1;
+                    break;
+                }
+            }else if(time == processes[i].next_arriving_time && processes[i].remaining_burst > 0 && time != total_time){
+                processes[i].feedback = 'L';
+                processes[i].lost++;
+                processes[i].arriving_time += processes[i].period;
+                processes[i].next_arriving_time += processes[i].period;
+                processes[i].is_running = 0;
+                processes[i].remaining_burst = processes[i].CPU_burst;
+                if(processes[i].running_for > 0){
+                    printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                }
+                executeProcess(&processes[i], time);
+                lastExecuted = &processes[i];
+                executed = 1;
+                processes[i].running_for = 1;
+                break;
+            }
+            
+            if(processes[i].remaining_burst > 0 && time >= processes[i].arriving_time){
+                executeProcess(&processes[i], time);
+                if(count_idle > 0){
+                    printf("idle for %d units\n", count_idle);
+                    count_idle = 0;
+                }
+                lastExecuted = &processes[i];
+                executed = 1;
+                break;
+            }else if(processes[i].remaining_burst == 0 && time > processes[i].arriving_time && executed == 1){
+                
+                processes[i].feedback = 'F';
+                processes[i].is_running = 0;
+                processes[i].completed++;
+                if(processes[i].next_arriving_time + processes[i].period <= total_time){
+                    processes[i].next_arriving_time += processes[i].period;
+                }
+                processes[i].arriving_time += processes[i].period;
+                printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                executeProcess(&processes[i], time);
+                lastExecuted->remaining_burst = lastExecuted->CPU_burst;
+                processes[i].running_for = 0;
+                lastExecuted = &processes[i];
+                executed = 0;
+
+            }else if((time < processes[i].next_arriving_time && time >= processes[i].arriving_time) || time == total_time && count_idle > 0){
+                    printf("idle for %d units\n", count_idle);
+                    count_idle = 0;
+                    break;
+                }
+            
+
+            
+        }
+        if(executed == 0){
+            count_idle++;
+        }
+        
+    // printf(" COUNT IDLE = %d", count_idle);
+    // printf("EXECUTED = %d", executed);
+        time++;
+    }
+    // printf("o idle é %d", count_idle);
+}
 
 void executeProcess(Process *process, int current_time) {
 
@@ -247,4 +357,10 @@ int rateSort(const void *a, const void *b) {
     Process *processA = (Process *)a;
     Process *processB = (Process *)b;
     return processA->period - processB->period;
+}
+
+int edfSort(const void *a, const void *b) {
+    Process *processA = (Process *)a;
+    Process *processB = (Process *)b;
+    return processA->next_arriving_time - processB->next_arriving_time;
 }
