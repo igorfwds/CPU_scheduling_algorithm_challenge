@@ -112,6 +112,10 @@ void rate(int total_time,Process *processes, int p_lines ) {
             }
     // printf("%s burst=> %d\t", processes[i].name,processes[i].remaining_burst);
             if(time == total_time){
+                if(count_idle > 0){
+                    printf("idle for %d\n", count_idle);
+                    count_idle = 0;
+                }
                 if(processes[i].remaining_burst > 0 && processes[i].arriving_time <= total_time){
                     processes[i].feedback = 'K';
                     processes[i].killed++;
@@ -162,7 +166,7 @@ void rate(int total_time,Process *processes, int p_lines ) {
                 lastExecuted = &processes[i];
                 executed = 1;
                 break;
-            }else if(processes[i].remaining_burst == 0 && time > processes[i].arriving_time && time < processes[i].next_arriving_time && executed == 1){
+            }else if(processes[i].remaining_burst == 0 && time > processes[i].arriving_time /*&& time < processes[i].next_arriving_time*/ && executed == 1){
                 
                 processes[i].feedback = 'F';
                 processes[i].is_running = 0;
@@ -190,16 +194,7 @@ void rate(int total_time,Process *processes, int p_lines ) {
         if(executed == 0){
             count_idle++;
         }
-        // if(idle_processes == p_lines){
-        //     count_idle++;
-        //     printf("o Count idle é %d", count_idle);
-        // }
-
-        // puts(lastExecuted->name);
-        // if(time == 25){
-        // //     printf("O next arriving time de %s é %d e o arriving time é %d",processes[0].name, processes[0].next_arriving_time, processes[0].arriving_time );
-        //     printf("O next arriving time de %s é %d e o arriving time é %d, já o remaining burst é %d",processes[1].name, processes[1].next_arriving_time, processes[1].arriving_time, processes[1].remaining_burst );
-        // }
+        
     // printf(" COUNT IDLE = %d", count_idle);
     // printf("EXECUTED = %d", executed);
         time++;
