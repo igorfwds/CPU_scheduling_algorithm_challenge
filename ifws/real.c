@@ -247,7 +247,9 @@ void executeProcess(Process *process, int current_time, int idle_time) {
     return;
 }
 
-
+void readingIdleTime(Process *process,int x, int y, int current_time){
+    
+}
 
 int rateSort(const void *a, const void *b) {
     Process *processA = (Process *)a;
