@@ -113,7 +113,7 @@ void rate(int total_time,Process *processes, int p_lines ) {
     // printf("%s burst=> %d\t", processes[i].name,processes[i].remaining_burst);
             if(time == total_time){
                 if(count_idle > 0){
-                    printf("idle for %d\n", count_idle);
+                    printf("idle for %d units\n", count_idle);
                     count_idle = 0;
                 }
                 if(processes[i].remaining_burst > 0 && processes[i].arriving_time <= total_time){
@@ -160,7 +160,7 @@ void rate(int total_time,Process *processes, int p_lines ) {
             if(processes[i].remaining_burst > 0 && time >= processes[i].arriving_time){
                 executeProcess(&processes[i], time);
                 if(count_idle > 0){
-                    printf("idle for %d\n", count_idle);
+                    printf("idle for %d units\n", count_idle);
                     count_idle = 0;
                 }
                 lastExecuted = &processes[i];
@@ -183,7 +183,7 @@ void rate(int total_time,Process *processes, int p_lines ) {
                 executed = 0;
 
             }else if((time < processes[i].next_arriving_time && time >= processes[i].arriving_time) || time == total_time && count_idle > 0){
-                    printf("idle for %d\n", count_idle);
+                    printf("idle for %d units\n", count_idle);
                     count_idle = 0;
                     break;
                 }
