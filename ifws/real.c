@@ -233,6 +233,7 @@ void populateProcess(Process *processesArray,int processLinesCount, FILE *file, 
 
 void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_lines){
     qsort(processes, p_lines, sizeof(Process), edfSort);
+    
     int time = 0;
     int count_idle = 0;
     int idle_processes = 0;
@@ -246,7 +247,7 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
             if(time == processes[i].arriving_time){
                 processes[i].remaining_burst = processes[i].CPU_burst;
             }
-    // printf("%s burst=> %d\t", processes[i].name,processes[i].remaining_burst);
+    // printf("%s burst=> %d | Deadline=> %d | arrive=> %d\t", processes[i].name,processes[i].remaining_burst, processes[i].next_arriving_time, processes[i].arriving_time);
             if(time == total_time){
                 if(count_idle > 0){
                     printf("idle for %d units\n", count_idle);
@@ -256,7 +257,9 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
                     processes[i].feedback = 'K';
                     processes[i].killed++;
                     if(processes[i].CPU_burst > processes[i].remaining_burst){
-                    printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                        if(processes[i].running_for > 0){
+                            printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                        }
                     }
                     processes[i].is_running = 0;
                     processes[i].running_for = 0;
@@ -309,9 +312,7 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
                 processes[i].feedback = 'F';
                 processes[i].is_running = 0;
                 processes[i].completed++;
-                if(processes[i].next_arriving_time + processes[i].period <= total_time){
-                    processes[i].next_arriving_time += processes[i].period;
-                }
+                processes[i].next_arriving_time += processes[i].period;
                 processes[i].arriving_time += processes[i].period;
                 printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
                 executeProcess(&processes[i], time);
