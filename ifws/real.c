@@ -22,7 +22,7 @@ typedef struct Process {
     char feedback;
 } Process;
 
-void executeProcess(Process *process, int current_time, int idle_time);
+void executeProcess(Process *process, int current_time);
 void populateProcess(Process *processesArray,int processLinesCount, FILE *file, int total_t);
 void rate(int total_time, Process *processes, int p_lines);
 void edf(int total_time, Process *processes, int p_lines);
@@ -106,13 +106,7 @@ void rate(int total_time,Process *processes, int p_lines ) {
     while (time <= total_time) {
         idle_processes = 0;
     // printf("\n TEMPO=>%d\t", time);
-        
-        
         for(int i=0; i < p_lines; i++){
-            if(processes[i].remaining_burst == processes[i].last_remaining_burst){
-                idle_processes++;
-                printf("o idle é =>%d e tem %d processos no array", idle_processes, p_lines);
-            }
             if(time == processes[i].arriving_time){
                 processes[i].remaining_burst = processes[i].CPU_burst;
             }
@@ -122,7 +116,7 @@ void rate(int total_time,Process *processes, int p_lines ) {
                     processes[i].feedback = 'K';
                     processes[i].killed++;
                     if(processes[i].CPU_burst > processes[i].remaining_burst){
-                    printf("\n[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                    printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
                     }
                     processes[i].is_running = 0;
                     processes[i].running_for = 0;
@@ -136,8 +130,8 @@ void rate(int total_time,Process *processes, int p_lines ) {
                     lastExecuted->is_running = 0;
                     lastExecuted->feedback = 'H';
                     processes[i].remaining_burst = processes[i].CPU_burst;
-                    printf("\n[%s] for %d units - %c\n", lastExecuted->name, lastExecuted->running_for, lastExecuted->feedback);
-                    executeProcess(&processes[i], time, count_idle);
+                    printf("[%s] for %d units - %c\n", lastExecuted->name, lastExecuted->running_for, lastExecuted->feedback);
+                    executeProcess(&processes[i], time);
                     lastExecuted->running_for = 0;
                     processes[i].running_for = 1;
                     lastExecuted = &processes[i];
@@ -151,8 +145,8 @@ void rate(int total_time,Process *processes, int p_lines ) {
                 processes[i].next_arriving_time += processes[i].period;
                 processes[i].is_running = 0;
                 processes[i].remaining_burst = processes[i].CPU_burst;
-                printf("\n[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
-                executeProcess(&processes[i], time, count_idle);
+                printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                executeProcess(&processes[i], time);
                 lastExecuted = &processes[i];
                 executed = 1;
                 processes[i].running_for = 1;
@@ -160,7 +154,7 @@ void rate(int total_time,Process *processes, int p_lines ) {
             }
             
             if(processes[i].remaining_burst > 0 && time >= processes[i].arriving_time){
-                executeProcess(&processes[i], time, count_idle);
+                executeProcess(&processes[i], time);
                 if(count_idle > 0){
                     printf("idle for %d\n", count_idle);
                     count_idle = 0;
@@ -177,41 +171,40 @@ void rate(int total_time,Process *processes, int p_lines ) {
                     processes[i].next_arriving_time += processes[i].period;
                 }
                 processes[i].arriving_time += processes[i].period;
-                printf("\n[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
-                executeProcess(&processes[i], time, count_idle);
+                printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                executeProcess(&processes[i], time);
                 lastExecuted->remaining_burst = lastExecuted->CPU_burst;
                 processes[i].running_for = 0;
                 lastExecuted = &processes[i];
-                executed = 1;
+                executed = 0;
 
-            }
-            // else if(executed == 0){
-            //     if(time < processes[i].next_arriving_time && time >= processes[i].arriving_time){
-            //         printf("idle for %d\n", count_idle);
-            //         count_idle = 0;
-            //         break;
-            //     }
-            // }
+            }else if((time < processes[i].next_arriving_time && time >= processes[i].arriving_time) || time == total_time && count_idle > 0){
+                    printf("idle for %d\n", count_idle);
+                    count_idle = 0;
+                    break;
+                }
             
 
             
         }
-        for(int i=0; i < p_lines; i++){
-            
-        }
-        if(idle_processes == p_lines){
+        if(executed == 0){
             count_idle++;
-            printf("o Count idle é %d", count_idle);
         }
+        // if(idle_processes == p_lines){
+        //     count_idle++;
+        //     printf("o Count idle é %d", count_idle);
+        // }
 
         // puts(lastExecuted->name);
         // if(time == 25){
         // //     printf("O next arriving time de %s é %d e o arriving time é %d",processes[0].name, processes[0].next_arriving_time, processes[0].arriving_time );
         //     printf("O next arriving time de %s é %d e o arriving time é %d, já o remaining burst é %d",processes[1].name, processes[1].next_arriving_time, processes[1].arriving_time, processes[1].remaining_burst );
         // }
+    // printf(" COUNT IDLE = %d", count_idle);
+    // printf("EXECUTED = %d", executed);
         time++;
     }
-    printf("o idle é %d", count_idle);
+    // printf("o idle é %d", count_idle);
 }
 
 void populateProcess(Process *processesArray,int processLinesCount, FILE *file, int total_t){
@@ -242,12 +235,10 @@ void populateProcess(Process *processesArray,int processLinesCount, FILE *file, 
 
 void edf(int total_time, Process *processes, int p_lines){}
 
-void executeProcess(Process *process, int current_time, int idle_time) {
+void executeProcess(Process *process, int current_time) {
 
     if (process->remaining_burst > 0) {
-        // if(idle_time > 0){
-        //     printf("idle for %d\n", idle_time);
-        // }
+        
         process->last_remaining_burst = process->remaining_burst;
         process->remaining_burst--;
         process->running_for++;
