@@ -109,13 +109,9 @@ void rate(int total_time,Process *processes, int p_lines ) {
     while (time <= total_time) {
         idle_processes = 0;
     // printf("\n TEMPO=>%d\t", time);
+        
+        
         for(int i=0; i < p_lines; i++){
-            if(processes[i].remaining_burst == 0){
-                idle_processes++;
-                if(idle_processes == p_lines){
-                    count_idle++;
-                }
-            }
             if(time == processes[i].arriving_time){
                 processes[i].remaining_burst = processes[i].CPU_burst;
             }
@@ -135,7 +131,7 @@ void rate(int total_time,Process *processes, int p_lines ) {
             
             
             if(lastExecuted != NULL && time == processes[i].arriving_time){
-                if(strcmp(lastExecuted->name, processes[i].name) != 0 && time != total_time && lastExecuted->remaining_burst > 0){
+                if(strcmp(lastExecuted->name, processes[i].name) != 0 && time != total_time && lastExecuted->remaining_burst > 0 && lastExecuted->is_running == 1){
                     lastExecuted->is_running = 0;
                     lastExecuted->feedback = 'H';
                     processes[i].remaining_burst = processes[i].CPU_burst;
@@ -164,6 +160,10 @@ void rate(int total_time,Process *processes, int p_lines ) {
             
             if(processes[i].remaining_burst > 0 && time >= processes[i].arriving_time){
                 executeProcess(&processes[i], time, count_idle);
+                if(count_idle > 0){
+                    printf("idle for %d\n", count_idle);
+                    count_idle = 0;
+                }
                 lastExecuted = &processes[i];
                 executed = 1;
                 break;
@@ -196,15 +196,25 @@ void rate(int total_time,Process *processes, int p_lines ) {
 
             
         }
-        
+        for(int i=0; i < p_lines; i++){
+            if(processes[i].remaining_burst == 0){
+                idle_processes++;
+                printf("o idle é =>%d", count_idle);
+            }
+        }
+        if(idle_processes == p_lines){
+            count_idle++;
+            printf("o Count idle é %d", count_idle);
+        }
+
         // puts(lastExecuted->name);
         // if(time == 25){
         // //     printf("O next arriving time de %s é %d e o arriving time é %d",processes[0].name, processes[0].next_arriving_time, processes[0].arriving_time );
         //     printf("O next arriving time de %s é %d e o arriving time é %d, já o remaining burst é %d",processes[1].name, processes[1].next_arriving_time, processes[1].arriving_time, processes[1].remaining_burst );
-        // //     printf("o idle é %d", count_idle);
         // }
         time++;
     }
+    printf("o idle é %d", count_idle);
 }
 
 void populateProcess(Process *processesArray,int processLinesCount, FILE *file, int total_t){
