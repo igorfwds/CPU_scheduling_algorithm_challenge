@@ -19,16 +19,18 @@ typedef struct Process {
     int could_run;
     int is_running;
     int last_remaining_burst;
+    int originIndex;
     char feedback;
 } Process;
-
+FILE *rateFile = NULL;
+FILE *edfFile = NULL;
 void executeProcess(Process *process, int current_time);
 void populateProcess(Process *processesArray,int processLinesCount, FILE *file, int total_t);
 void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines);
 void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_lines);
 int rateSort(const void *a, const void *b);
 int edfSort(const void *a, const void *b);
-
+int originIndexSort(const void *a, const void *b);
 
 int main(int argc, char **argv) {
     int total_time,p_lines;
@@ -39,7 +41,7 @@ int main(int argc, char **argv) {
         printf("Por favor, forneça o nome do arquivo como argumento.\n");
         return 1;
     }
-
+    
     FILE *ptr_file = fopen(argv[1], "r");
     if (ptr_file == NULL) {
         printf("Erro ao abrir o arquivo.\n");
@@ -68,28 +70,60 @@ int main(int argc, char **argv) {
     populateProcess(processes,p_lines, ptr_file, total_time);
 
 
-    
     if(strcmp(argv[0], "./rate") == 0){
-        printf("EXECUTION BY RATE\n");
+        rateFile = fopen("rate.out", "w");
+        fprintf(rateFile,"EXECUTION BY RATE\n");
+        fclose(rateFile);
+
         rateMonotonicAlgorithm(total_time, processes, p_lines);
 
+        qsort(processes, p_lines, sizeof(Process), originIndexSort);
+        fopen("rate.out", "a");
+        fprintf(rateFile,"\nLOST DEADLINES\n");
+        for(int p = 0; p < p_lines; p++){
+            fprintf(rateFile,"[%s] %d\n", processes[p].name, processes[p].lost);
+        }
+        fprintf(rateFile,"\nCOMPLETE EXECUTION\n");
+        for(int p = 0; p < p_lines; p++){
+            fprintf(rateFile,"[%s] %d\n", processes[p].name, processes[p].completed);
+        }
+        fprintf(rateFile,"\nKILLED\n");
+        for(int p = 0; p < p_lines; p++){
+            if(p == p_lines-1){
+                fprintf(rateFile,"[%s] %d", processes[p].name, processes[p].killed);
+            }else{
+                fprintf(rateFile,"[%s] %d\n", processes[p].name, processes[p].killed);
+            }
+        }
+        fclose(rateFile);
     }else if(strcmp(argv[0], "./edf") == 0){
-        printf("\nEXECUTION BY EDF\n");    
-        earliestDeadlineFirstAlgorithm(total_time, processes, p_lines);
-    }
+        edfFile = fopen("edf.out", "w");
+        fprintf(edfFile ,"EXECUTION BY EDF\n");    
+        fclose(edfFile);
 
-    printf("\nLOST DEADLINES\n");
-    for(int p = 0; p < p_lines; p++){
-        printf("[%s] %d\n", processes[p].name, processes[p].lost);
-    }
-    printf("\nCOMPLETE EXECUTION\n");
-    for(int p = 0; p < p_lines; p++){
-        printf("[%s] %d\n", processes[p].name, processes[p].completed);
-    }
-    printf("\nKILLED\n");
-    for(int p = 0; p < p_lines; p++){
-        printf("[%s] %d\n", processes[p].name, processes[p].killed);
-    }
+        earliestDeadlineFirstAlgorithm(total_time, processes, p_lines);
+
+        qsort(processes, p_lines, sizeof(Process), originIndexSort);
+        fopen("edf.out", "a");
+        fprintf(edfFile,"\nLOST DEADLINES\n");
+        for(int p = 0; p < p_lines; p++){
+            fprintf(edfFile,"[%s] %d\n", processes[p].name, processes[p].lost);
+        }
+        fprintf(edfFile,"\nCOMPLETE EXECUTION\n");
+        for(int p = 0; p < p_lines; p++){
+            fprintf(edfFile,"[%s] %d\n", processes[p].name, processes[p].completed);
+        }
+        fprintf(edfFile,"\nKILLED\n");
+        for(int p = 0; p < p_lines; p++){
+            if(p == p_lines-1){
+                fprintf(edfFile,"[%s] %d", processes[p].name, processes[p].killed);
+            }else{
+                fprintf(edfFile,"[%s] %d\n", processes[p].name, processes[p].killed);
+            }
+        }
+        fclose(edfFile);
+        }
+    
     
 
     fclose(ptr_file);
@@ -114,14 +148,18 @@ void rateMonotonicAlgorithm(int total_time,Process *processes, int p_lines ) {
     // printf("%s burst=> %d\t", processes[i].name,processes[i].remaining_burst);
             if(time == total_time){
                 if(count_idle > 0){
-                    printf("idle for %d units\n", count_idle);
+                    fopen("rate.out", "a");
+                    fprintf(rateFile,"idle for %d units\n", count_idle);
+                    fclose(rateFile);
                     count_idle = 0;
                 }
                 if(processes[i].remaining_burst > 0 && processes[i].arriving_time <= total_time){
                     processes[i].feedback = 'K';
                     processes[i].killed++;
                     if(processes[i].CPU_burst > processes[i].remaining_burst){
-                    printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                    fopen("rate.out", "a");
+                    fprintf(rateFile,"[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                    fclose(rateFile);
                     }
                     processes[i].is_running = 0;
                     processes[i].running_for = 0;
@@ -135,7 +173,9 @@ void rateMonotonicAlgorithm(int total_time,Process *processes, int p_lines ) {
                     lastExecuted->is_running = 0;
                     lastExecuted->feedback = 'H';
                     processes[i].remaining_burst = processes[i].CPU_burst;
-                    printf("[%s] for %d units - %c\n", lastExecuted->name, lastExecuted->running_for, lastExecuted->feedback);
+                    fopen("rate.out", "a");
+                    fprintf(rateFile,"[%s] for %d units - %c\n", lastExecuted->name, lastExecuted->running_for, lastExecuted->feedback);
+                    fclose(rateFile);
                     executeProcess(&processes[i], time);
                     lastExecuted->running_for = 0;
                     processes[i].running_for = 1;
@@ -151,7 +191,9 @@ void rateMonotonicAlgorithm(int total_time,Process *processes, int p_lines ) {
                 processes[i].is_running = 0;
                 processes[i].remaining_burst = processes[i].CPU_burst;
                 if(processes[i].running_for > 0){
-                    printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                    fopen("rate.out", "a");
+                    fprintf(rateFile,"[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                    fclose(rateFile);
                 }
                 executeProcess(&processes[i], time);
                 lastExecuted = &processes[i];
@@ -163,7 +205,9 @@ void rateMonotonicAlgorithm(int total_time,Process *processes, int p_lines ) {
             if(processes[i].remaining_burst > 0 && time >= processes[i].arriving_time){
                 executeProcess(&processes[i], time);
                 if(count_idle > 0){
-                    printf("idle for %d units\n", count_idle);
+                    fopen("rate.out", "a");
+                    fprintf(rateFile,"idle for %d units\n", count_idle);
+                    fclose(rateFile);
                     count_idle = 0;
                 }
                 lastExecuted = &processes[i];
@@ -178,7 +222,9 @@ void rateMonotonicAlgorithm(int total_time,Process *processes, int p_lines ) {
                     processes[i].next_arriving_time += processes[i].period;
                 }
                 processes[i].arriving_time += processes[i].period;
-                printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                fopen("rate.out", "a");
+                fprintf(rateFile,"[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                fclose(rateFile);
                 executeProcess(&processes[i], time);
                 lastExecuted->remaining_burst = lastExecuted->CPU_burst;
                 processes[i].running_for = 0;
@@ -186,7 +232,9 @@ void rateMonotonicAlgorithm(int total_time,Process *processes, int p_lines ) {
                 executed = 0;
 
             }else if((time < processes[i].next_arriving_time && time >= processes[i].arriving_time) || time == total_time && count_idle > 0){
-                    printf("idle for %d units\n", count_idle);
+                    fopen("rate.out", "a");
+                    fprintf(rateFile,"idle for %d units\n", count_idle);
+                    fclose(rateFile);
                     count_idle = 0;
                     break;
                 }
@@ -227,6 +275,7 @@ void populateProcess(Process *processesArray,int processLinesCount, FILE *file, 
         processesArray[i].is_running = 0;
         processesArray[i].last_remaining_burst = processesArray[i].remaining_burst;
         processesArray[i].next_arriving_time = processesArray[i].period;
+        processesArray[i].originIndex = i;
         
     }
 }
@@ -250,7 +299,9 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
     // printf("%s burst=> %d | Deadline=> %d | arrive=> %d\t", processes[i].name,processes[i].remaining_burst, processes[i].next_arriving_time, processes[i].arriving_time);
             if(time == total_time){
                 if(count_idle > 0){
-                    printf("idle for %d units\n", count_idle);
+                    fopen("edf.out", "a");
+                    fprintf(edfFile,"idle for %d units\n", count_idle);
+                    fclose(edfFile);
                     count_idle = 0;
                 }
                 if(processes[i].remaining_burst > 0 && processes[i].arriving_time <= total_time){
@@ -258,7 +309,9 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
                     processes[i].killed++;
                     if(processes[i].CPU_burst > processes[i].remaining_burst){
                         if(processes[i].running_for > 0){
-                            printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                            fopen("edf.out", "a");
+                            fprintf(edfFile, "[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                            fclose(edfFile);
                         }
                     }
                     processes[i].is_running = 0;
@@ -273,7 +326,9 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
                     lastExecuted->is_running = 0;
                     lastExecuted->feedback = 'H';
                     processes[i].remaining_burst = processes[i].CPU_burst;
-                    printf("[%s] for %d units - %c\n", lastExecuted->name, lastExecuted->running_for, lastExecuted->feedback);
+                    fopen("edf.out", "a");
+                    fprintf(edfFile,"[%s] for %d units - %c\n", lastExecuted->name, lastExecuted->running_for, lastExecuted->feedback);
+                    fclose(edfFile);
                     executeProcess(&processes[i], time);
                     lastExecuted->running_for = 0;
                     processes[i].running_for = 1;
@@ -289,7 +344,9 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
                 processes[i].is_running = 0;
                 processes[i].remaining_burst = processes[i].CPU_burst;
                 if(processes[i].running_for > 0){
-                    printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                    fopen("edf.out", "a");
+                    fprintf(edfFile, "[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                    fclose(edfFile);
                 }
                 executeProcess(&processes[i], time);
                 lastExecuted = &processes[i];
@@ -301,7 +358,9 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
             if(processes[i].remaining_burst > 0 && time >= processes[i].arriving_time){
                 executeProcess(&processes[i], time);
                 if(count_idle > 0){
-                    printf("idle for %d units\n", count_idle);
+                    fopen("edf.out", "a");
+                    fprintf(edfFile,"idle for %d units\n", count_idle);
+                    fclose(edfFile);
                     count_idle = 0;
                 }
                 lastExecuted = &processes[i];
@@ -314,7 +373,9 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
                 processes[i].completed++;
                 processes[i].next_arriving_time += processes[i].period;
                 processes[i].arriving_time += processes[i].period;
-                printf("[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                fopen("edf.out", "a");
+                fprintf(edfFile, "[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                fclose(edfFile);
                 executeProcess(&processes[i], time);
                 lastExecuted->remaining_burst = lastExecuted->CPU_burst;
                 processes[i].running_for = 0;
@@ -322,7 +383,9 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
                 executed = 0;
 
             }else if((time < processes[i].next_arriving_time && time >= processes[i].arriving_time) || time == total_time && count_idle > 0){
-                    printf("idle for %d units\n", count_idle);
+                    fopen("edf.out", "a");
+                    fprintf(edfFile,"idle for %d units\n", count_idle);
+                    fclose(edfFile);
                     count_idle = 0;
                     break;
                 }
@@ -364,4 +427,10 @@ int edfSort(const void *a, const void *b) {
     Process *processA = (Process *)a;
     Process *processB = (Process *)b;
     return processA->next_arriving_time - processB->next_arriving_time;
+}
+
+int originIndexSort(const void *a, const void *b) {
+    Process *processA = (Process *)a;
+    Process *processB = (Process *)b;
+    return processA->originIndex - processB->originIndex;
 }
