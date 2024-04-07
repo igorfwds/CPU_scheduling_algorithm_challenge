@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 {
     int total_time, p_lines;
     int count = 0;
-    char line[256];
+    char line[1000];
 
     if (argc < 2)
     {
@@ -241,7 +241,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                 executed = 1;
                 break;
             }
-            else if (processes[i].remaining_burst == 0 && time > processes[i].arriving_time && executed == 1)
+            else if (processes[i].remaining_burst == 0 && time >= processes[i].arriving_time && executed == 1)
             {
 
                 processes[i].feedback = 'F';
