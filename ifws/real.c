@@ -242,7 +242,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                 break;
             }
             else if (processes[i].remaining_burst == 0 && time >= processes[i].arriving_time && executed == 1)
-            {
+            { // TODO:  talvez nao adicionar como ultimo rodado resolva o problema
 
                 processes[i].feedback = 'F';
                 processes[i].is_running = 0;
