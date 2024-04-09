@@ -153,7 +153,6 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
     int executed = 0;
     Process *lastExecuted = NULL;
     int remainBurst = 0;
-    int remainBurst = 0;
     while (time <= total_time)
     {
         idle_processes = 0;
