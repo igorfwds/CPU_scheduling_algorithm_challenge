@@ -197,9 +197,11 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                     lastExecuted->is_running = 0;
                     lastExecuted->feedback = 'H';
                     processes[i].remaining_burst = processes[i].CPU_burst;
-                    fopen("rate.out", "a");
-                    fprintf(rateFile, "[%s] for %d units - %c\n", lastExecuted->name, lastExecuted->running_for, lastExecuted->feedback);
-                    fclose(rateFile);
+                    if(lastExecuted->running_for > 0){
+                        fopen("rate.out", "a");
+                        fprintf(rateFile, "[%s] for %d units - %c\n", lastExecuted->name, lastExecuted->running_for, lastExecuted->feedback);
+                        fclose(rateFile);
+                    }
                     executeProcess(&processes[i], time);
                     lastExecuted->running_for = 0;
                     processes[i].running_for = 1;
