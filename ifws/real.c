@@ -156,7 +156,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
     while (time <= total_time)
     {
         idle_processes = 0;
-        printf("\n TEMPO=>%d\t", time);
+        // printf("\n TEMPO=>%d\t", time);
         for (int i = 0; i < p_lines; i++)
         {
             if (time == processes[i].arriving_time)
@@ -164,7 +164,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                 processes[i].remaining_burst = processes[i].CPU_burst;
             }
 
-            printf("%s burst=> %d | arriving time=> %d | next arriving time=> %d\t", processes[i].name,processes[i].remaining_burst, processes[i].arriving_time, processes[i].next_arriving_time);
+            // printf("%s burst=> %d | arriving time=> %d | next arriving time=> %d\t", processes[i].name,processes[i].remaining_burst, processes[i].arriving_time, processes[i].next_arriving_time);
             if (time == total_time)
             {
                 if (count_idle > 0)
@@ -178,7 +178,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                 {
                     processes[i].feedback = 'K';
                     processes[i].killed++;
-                    if (processes[i].CPU_burst > processes[i].remaining_burst)
+                    if (processes[i].running_for > 0)
                     {
                         fopen("rate.out", "a");
                         fprintf(rateFile, "[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
@@ -256,9 +256,12 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                     processes[i].next_arriving_time += processes[i].period;
                 }
                 processes[i].arriving_time += processes[i].period;
-                fopen("rate.out", "a");
-                fprintf(rateFile, "[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
-                fclose(rateFile);
+                if (processes[i].CPU_burst > processes[i].remaining_burst)
+                {
+                    fopen("rate.out", "a");
+                    fprintf(rateFile, "[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
+                    fclose(rateFile);
+                }
                 processes[i].remaining_burst = processes[i].CPU_burst;
                 executeProcess(&processes[i], time);
                 lastExecuted->remaining_burst = lastExecuted->CPU_burst;
