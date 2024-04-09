@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 {
     int total_time, p_lines;
     int count = 0;
-    char line[1000];
+    char line[10000];
 
     if (argc < 2)
     {
@@ -152,17 +152,19 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
     int idle_processes = 0;
     int executed = 0;
     Process *lastExecuted = NULL;
+    int remainBurst = 0;
     while (time <= total_time)
     {
         idle_processes = 0;
-        // printf("\n TEMPO=>%d\t", time);
+        printf("\n TEMPO=>%d\t", time);
         for (int i = 0; i < p_lines; i++)
         {
             if (time == processes[i].arriving_time)
             {
                 processes[i].remaining_burst = processes[i].CPU_burst;
             }
-            // printf("%s burst=> %d\t", processes[i].name,processes[i].remaining_burst);
+
+            printf("%s burst=> %d | arriving time=> %d | next arriving time=> %d\t", processes[i].name,processes[i].remaining_burst, processes[i].arriving_time, processes[i].next_arriving_time);
             if (time == total_time)
             {
                 if (count_idle > 0)
@@ -242,7 +244,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                 break;
             }
             else if (processes[i].remaining_burst == 0 && time >= processes[i].arriving_time && executed == 1)
-            {
+            { // TODO:  talvez nao adicionar como ultimo rodado resolva o problema
 
                 processes[i].feedback = 'F';
                 processes[i].is_running = 0;
@@ -255,6 +257,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                 fopen("rate.out", "a");
                 fprintf(rateFile, "[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
                 fclose(rateFile);
+                processes[i].remaining_burst = processes[i].CPU_burst;
                 executeProcess(&processes[i], time);
                 lastExecuted->remaining_burst = lastExecuted->CPU_burst;
                 processes[i].running_for = 0;
