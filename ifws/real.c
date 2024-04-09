@@ -153,12 +153,25 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
     int executed = 0;
     Process *lastExecuted = NULL;
     int remainBurst = 0;
+    int remainBurst = 0;
     while (time <= total_time)
     {
         idle_processes = 0;
-        // printf("\n TEMPO=>%d\t", time);
+        printf("\n TEMPO=>%d\t", time);
+        for (int x = 0; x < p_lines; x++)
+        {
+            printf("%s burst=> %d | arriving time=> %d | next arriving time=> %d\t", processes[x].name, processes[x].remaining_burst, processes[x].arriving_time, processes[x].next_arriving_time);
+        }
         for (int i = 0; i < p_lines; i++)
         {
+
+            // if (time == processes[i].next_arriving_time)
+            // {
+            //     processes[i].remaining_burst = processes[i].CPU_burst;
+            //     processes[i].arriving_time = processes[i].next_arriving_time;
+            //     processes[i].next_arriving_time += processes[i].period;
+            // }
+
             if (time == processes[i].arriving_time)
             {
                 processes[i].remaining_burst = processes[i].CPU_burst;
@@ -197,20 +210,21 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                     lastExecuted->is_running = 0;
                     lastExecuted->feedback = 'H';
                     processes[i].remaining_burst = processes[i].CPU_burst;
-                    if(lastExecuted->running_for > 0){
+                    if (lastExecuted->running_for > 0)
+                    {
                         fopen("rate.out", "a");
                         fprintf(rateFile, "[%s] for %d units - %c\n", lastExecuted->name, lastExecuted->running_for, lastExecuted->feedback);
                         fclose(rateFile);
                     }
                     executeProcess(&processes[i], time);
                     lastExecuted->running_for = 0;
-                    processes[i].running_for = 1;
+                    // processes[i].running_for = 0;
                     lastExecuted = &processes[i];
                     executed = 1;
                     break;
                 }
             }
-            else if (time == processes[i].next_arriving_time && processes[i].remaining_burst > 0 && time != total_time)
+            if (lastExecuted != NULL && time == processes[i].next_arriving_time && processes[i].remaining_burst > 0 && time != total_time)
             {
                 processes[i].feedback = 'L';
                 processes[i].lost++;
@@ -226,9 +240,10 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                 }
                 executeProcess(&processes[i], time);
                 lastExecuted = &processes[i];
+                lastExecuted->remaining_burst = lastExecuted->CPU_burst;
                 executed = 1;
-                processes[i].running_for = 1;
-                break;
+                processes[i].running_for = 0;
+                // break;
             }
 
             if (processes[i].remaining_burst > 0 && time >= processes[i].arriving_time)
@@ -283,7 +298,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
             count_idle++;
         }
 
-        // printf(" COUNT IDLE = %d", count_idle);
+        printf("IDLE = %d", count_idle);
         // printf("EXECUTED = %d", executed);
         time++;
     }
