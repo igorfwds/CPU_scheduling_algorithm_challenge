@@ -168,10 +168,10 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
         }
         for (int i = 0; i < p_lines; i++)
         {
-            if (time == processes[i].arriving_time)
-            {
-                processes[i].remaining_burst = processes[i].CPU_burst;
-            }
+            // if (time == processes[i].arriving_time)
+            // {
+            //     processes[i].remaining_burst = processes[i].CPU_burst;
+            // }
             if (processes[i].remaining_burst > 0 && time >= processes[i].arriving_time)
             {
                 executeProcess(&processes[i], time);
@@ -186,7 +186,6 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                 executed = 1;
                 break;
             }
-            // printf("%s burst=> %d | arriving time=> %d | next arriving time=> %d\t", processes[i].name,processes[i].remaining_burst, processes[i].arriving_time, processes[i].next_arriving_time);
         }
 
         printf("\nPOS EXECUÇÃO ");
@@ -225,7 +224,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                 break;
             }
 
-            else if (processes[i].remaining_burst == 0 && time >= processes[i].arriving_time && executed == 1)
+            else if (processes[i].remaining_burst == 0 && time >= processes[i].arriving_time && processes[i].running_for > 0)
             {
                 finishingProcess(&processes[i], total_time, time, &lastExecuted, &executed);
                 break;
@@ -333,7 +332,7 @@ void finishingProcess(Process *Process, int total_time, int time, struct Process
     {
         Process->next_arriving_time += Process->period;
     }
-    if (Process->CPU_burst > Process->remaining_burst)
+    if (Process->CPU_burst > Process->remaining_burst && Process->running_for > 0)
     {
         fopen("rate.out", "a");
         fprintf(rateFile, "[%s] for %d units - %c\n", Process->name, Process->running_for, Process->feedback);
