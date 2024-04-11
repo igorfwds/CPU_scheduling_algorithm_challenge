@@ -168,11 +168,11 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
         }
         for (int i = 0; i < p_lines; i++)
         {
-            // if (time == processes[i].arriving_time)
-            // {
-            //     processes[i].remaining_burst = processes[i].CPU_burst;
-            // }
-            if (processes[i].remaining_burst > 0 && time >= processes[i].arriving_time)
+            if (time == processes[i].arriving_time)
+            {
+                processes[i].remaining_burst = processes[i].CPU_burst;
+            }
+            if (processes[i].remaining_burst > 0 && time >= processes[i].arriving_time && time != total_time)
             {
                 executeProcess(&processes[i], time);
                 if (count_idle > 0)
@@ -195,6 +195,12 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
         }
         for (int i = 0; i < p_lines; i++)
         {
+            if (processes[i].remaining_burst == 0 && time >= processes[i].arriving_time && processes[i].running_for > 0)
+            {
+                finishingProcess(&processes[i], total_time, time, &lastExecuted, &executed);
+                // break;
+            }
+
             if (time == total_time)
             {
                 if (count_idle > 0)
@@ -215,21 +221,16 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                 if (strcmp(lastExecuted->name, processes[i].name) != 0 && time != total_time && lastExecuted->remaining_burst > 0 && lastExecuted->is_running == 1)
                 {
                     holdingProcess(&processes[i], total_time, time, &lastExecuted, &executed);
-                    break;
+                    // break;
                 }
             }
             if (lastExecuted != NULL && time == processes[i].next_arriving_time && processes[i].remaining_burst > 0 && time != total_time)
             {
                 lostingProcess(&processes[i], total_time, time, &lastExecuted, &executed);
-                break;
+                // break;
             }
 
-            else if (processes[i].remaining_burst == 0 && time >= processes[i].arriving_time && processes[i].running_for > 0)
-            {
-                finishingProcess(&processes[i], total_time, time, &lastExecuted, &executed);
-                break;
-            }
-            else if ((time < processes[i].next_arriving_time && time >= processes[i].arriving_time) || time == total_time && count_idle > 0)
+            if ((time < processes[i].next_arriving_time && time >= processes[i].arriving_time) || time == total_time && count_idle > 0)
             {
                 if (count_idle > 0)
                 {
@@ -238,7 +239,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                     fclose(rateFile);
                 }
                 count_idle = 0;
-                break;
+                // break;
             }
         }
         if (executed == 0)
@@ -246,6 +247,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
             count_idle++;
         }
         time++;
+        if(time > total_time) break;
         printf("\nPOS FLAGS T=%d",time);
         for (int x = 0; x < p_lines; x++)
         {
