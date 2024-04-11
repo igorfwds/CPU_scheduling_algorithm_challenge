@@ -4,14 +4,13 @@ EXECUTION BY RATE
 [T1] for 25 units - F
 [T1] for 25 units - F
 [T2] for 66 units - F
-[T1] for 1 units - L
-[T1] for 10 units - H
-[T2] for 1 units - L
+[T1] for 11 units - H
 [T1] for 4 units - K
+[T2] for 1 units - K
 
 LOST DEADLINES
-[T1] 1
-[T2] 1
+[T1] 0
+[T2] 0
 
 COMPLETE EXECUTION
 [T1] 3
