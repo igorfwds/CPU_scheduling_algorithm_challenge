@@ -156,14 +156,8 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
     while (time <= total_time)
     {
         idle_processes = 0;
-        printf("\n TEMPO=>%d\t", time);
-        for (int x = 0; x < p_lines; x++)
-        {
-            printf("%s burst=> %d | arriving time=> %d | next arriving time=> %d\t", processes[x].name, processes[x].remaining_burst, processes[x].arriving_time, processes[x].next_arriving_time);
-        }
         for (int i = 0; i < p_lines; i++)
         {
-
             if (time == processes[i].arriving_time)
             {
                 processes[i].remaining_burst = processes[i].CPU_burst;
@@ -287,7 +281,6 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
             count_idle++;
         }
 
-        printf("IDLE = %d", count_idle);
         time++;
     }
 }
@@ -333,14 +326,12 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
     {
         qsort(processes, p_lines, sizeof(Process), edfSort);
         idle_processes = 0;
-        // printf("\n TEMPO=>%d\t", time);
         for (int i = 0; i < p_lines; i++)
         {
             if (time == processes[i].arriving_time)
             {
                 processes[i].remaining_burst = processes[i].CPU_burst;
             }
-            // printf("%s burst=> %d | Deadline=> %d | arrive=> %d\t", processes[i].name,processes[i].remaining_burst, processes[i].next_arriving_time, processes[i].arriving_time);
             if (time == total_time)
             {
                 if (count_idle > 0)
@@ -376,9 +367,12 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
                     lastExecuted->is_running = 0;
                     lastExecuted->feedback = 'H';
                     processes[i].remaining_burst = processes[i].CPU_burst;
+                    if(lastExecuted->running_for > 0)
+                    {
                     fopen("edf.out", "a");
                     fprintf(edfFile, "[%s] for %d units - %c\n", lastExecuted->name, lastExecuted->running_for, lastExecuted->feedback);
                     fclose(edfFile);
+                    }
                     executeProcess(&processes[i], time);
                     lastExecuted->running_for = 0;
                     processes[i].running_for = 1;
@@ -430,9 +424,12 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
                 processes[i].completed++;
                 processes[i].next_arriving_time += processes[i].period;
                 processes[i].arriving_time += processes[i].period;
+                if(processes[i].running_for > 0)
+                {
                 fopen("edf.out", "a");
                 fprintf(edfFile, "[%s] for %d units - %c\n", processes[i].name, processes[i].running_for, processes[i].feedback);
                 fclose(edfFile);
+                }
                 executeProcess(&processes[i], time);
                 lastExecuted->remaining_burst = lastExecuted->CPU_burst;
                 processes[i].running_for = 0;
@@ -441,9 +438,11 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
             }
             else if ((time < processes[i].next_arriving_time && time >= processes[i].arriving_time) || time == total_time && count_idle > 0)
             {
-                fopen("edf.out", "a");
+                if(count_idle > 0)
+                {fopen("edf.out", "a");
                 fprintf(edfFile, "idle for %d units\n", count_idle);
                 fclose(edfFile);
+                }
                 count_idle = 0;
                 break;
             }
@@ -453,11 +452,8 @@ void earliestDeadlineFirstAlgorithm(int total_time, Process *processes, int p_li
             count_idle++;
         }
 
-        // printf(" COUNT IDLE = %d", count_idle);
-        // printf("EXECUTED = %d", executed);
         time++;
     }
-    // printf("o idle é %d", count_idle);
 }
 
 void executeProcess(Process *process, int current_time)
