@@ -195,23 +195,23 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
         }
         for (int i = 0; i < p_lines; i++)
         {
-            if (processes[i].remaining_burst == 0 && time >= processes[i].arriving_time && processes[i].running_for > 0)
+            if (processes[i].remaining_burst == 0 && processes[i].running_for > 0)
             {
                 finishingProcess(&processes[i], total_time, time, &lastExecuted, &executed);
-                // break;
+                continue;
             }
-            else if (lastExecuted != NULL && time == processes[i].arriving_time)
+            else if ( time == processes[i].arriving_time)
             {
-                if (strcmp(lastExecuted->name, processes[i].name) != 0 && time != total_time && lastExecuted->remaining_burst > 0 && lastExecuted->is_running == 1)
+                if (strcmp(lastExecuted->name, processes[i].name) != 0  && lastExecuted->remaining_burst > 0 && lastExecuted->is_running == 1)
                 {
                     holdingProcess(&processes[i], total_time, time, &lastExecuted, &executed);
-                    break;
+                    continue;
                 }
             }
-            else if (lastExecuted != NULL && time == processes[i].next_arriving_time && processes[i].remaining_burst > 0 && time != total_time)
+            else if ( time == processes[i].next_arriving_time && processes[i].remaining_burst > 0 )
             {
                 lostingProcess(&processes[i], total_time, time, &lastExecuted, &executed);
-                break;
+                continue;
             }
 
             else if ((time < processes[i].next_arriving_time && time >= processes[i].arriving_time) || time == total_time && count_idle > 0)
@@ -259,7 +259,7 @@ void rateMonotonicAlgorithm(int total_time, Process *processes, int p_lines)
                 {
                     processes[x].next_arriving_time += processes[x].period;
                 }
-                break;
+                continue;
             }
         }
         printf("\nPOS RESET AT E NAT ");
